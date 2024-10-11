@@ -1,3 +1,11 @@
+#!/usr/bin/env nextflow
+
+log.info """\
+  FLAIR pipeline on mamba and slurm executor 
+  ================================================
+  sample sheet: ${params.sample_sheet}
+"""
+
 process FLAIR_ALIGN {
     publishDir "${params.outdir}/aligned", mode: 'copy'
 
@@ -11,6 +19,7 @@ process FLAIR_ALIGN {
     output:
         tuple val(sample_id), path("${sample_id}.flair.aligned.bam"), path("${sample_id}.flair.aligned.bam.bai"), path("${sample_id}.flair.aligned.bed")
 
+    script:
     """
     flair align -g ${ref_fasta} \
         -r ${fastq} \
@@ -32,6 +41,7 @@ process FLAIR_CORRECT {
     output: 
         tuple val(sample_id), path("${sample_id}.flair_all_corrected.bed"), path("${sample_id}.flair_all_inconsistent.bed")
 
+    script:
     """
     flair correct -g ${ref_fasta} \
         --gtf ${gtf} \
@@ -50,8 +60,9 @@ process FLAIR_COLLAPSE_FASTQ {
     output:    
         path('combined_samples.fastq')
 
+    script:
     """
-        awk -F, 'NR>1 {print $3}' ${sample_sheet} | xargs cat > combined_samples.fastq
+        awk -F, 'NR>1 {print \$3}' ${sample_sheet} | xargs cat > combined_samples.fastq
     """    
 }
 
