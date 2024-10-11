@@ -1,11 +1,21 @@
 #!/usr/bin/env nextflow
 
 log.info """\
-  FLAIR pipeline on mamba and slurm executor 
+  FLAIR_NF PIPELINE on mamba and slurm executor 
   ================================================
-  sample sheet: ${params.sample_sheet}
+  sample sheet      : ${params.sample_sheet}
+  project directory : ${projectDir}
+  work directory    : ${workDir}
+  genomic reference : ${params.genome_reference}
+  gtf               : ${params.gtf}
+  output directory  : ${params.outdir}
 """
+.stripIndent()
 
+/*
+* flair align: align fastq files to feed to minmap2; in the future we should
+* allow hifi reads and use PacBio's wrapper function of minmap2
+*/
 process FLAIR_ALIGN {
     publishDir "${params.outdir}/aligned", mode: 'copy'
 
@@ -51,7 +61,7 @@ process FLAIR_CORRECT {
     """
 }
 
-process FLAIR_COLLAPSE_FASTQ {
+process FLAIR_CONCAT_FASTQ {
     publishDir "${params.outdir}/collapse", mode: 'copy'
 
     input: 
@@ -62,9 +72,32 @@ process FLAIR_COLLAPSE_FASTQ {
 
     script:
     """
-        awk -F, 'NR>1 {print \$3}' ${sample_sheet} | xargs cat > combined_samples.fastq
+    awk -F, 'NR>1 {print \$3}' ${sample_sheet} | xargs cat > combined_samples.fastq
     """    
 }
+
+
+process FLAIR_CONCAT_CORRECT_BED {
+    publishDir "${params.outdir}/collapse", mode: 'copy'
+
+    input: 
+        val(correct_files)
+
+    output: 
+        path('combined_samples.all_corrected.bed')
+
+    script:
+    """
+    # Use Groovy's findAll to extract .bed files
+    bed_files=\$(echo ${correct_files.join(' ')} | xargs -n 1 | grep 'flair_all_corrected.bed')
+
+    # Concatenate the filtered bed files
+    cat \$bed_files > combined_samples.all_corrected.bed
+    """        
+
+}
+
+
 
 workflow {
     // Create input channel from samplesheet in CSV format
@@ -75,12 +108,11 @@ workflow {
     FLAIR_ALIGN(reads_ch, params.genome_reference, params.genome_reference_index, params.gtf, params.min_mapq)
     // FLAIR_ALIGN.out.view{ it }
     FLAIR_CORRECT(FLAIR_ALIGN.out, params.genome_reference, params.gtf)
-    // FLAIR_CORRECT.out.view{ it }
-    FLAIR_COLLAPSE_FASTQ(params.sample_sheet)
-    // FLAIR_COLLAPSE_BED()
+    //FLAIR_CORRECT.out.view{ it }
 
+    FLAIR_CONCAT_FASTQ(params.sample_sheet)
+    FLAIR_CONCAT_CORRECT_BED(FLAIR_CORRECT.out.collect())
+    FLAIR_CONCAT_CORRECT_BED.out.view{ it }
     // sample manifest file
     // FLAIR_QUANTIFY()
-
-    
 }
