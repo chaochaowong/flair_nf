@@ -45,13 +45,13 @@ process FLAIR_COLLAPSE_FASTQ {
     publishDir "${params.outdir}/collapse", mode: 'copy'
 
     input: 
-        path(fastq_folder)
+        path(sample_sheet)
 
     output:    
         path('combined_samples.fastq')
 
     """
-        cat ${fastq_foldr}/*.fastq > combined_samples.fastq
+        awk -F, 'NR>1 {print $3}' ${sample_sheet} | xargs cat > combined_samples.fastq
     """    
 }
 
@@ -65,6 +65,11 @@ workflow {
     // FLAIR_ALIGN.out.view{ it }
     FLAIR_CORRECT(FLAIR_ALIGN.out, params.genome_reference, params.gtf)
     // FLAIR_CORRECT.out.view{ it }
-    FLAIR_COLLAPSE(params.fastq_folder)
+    FLAIR_COLLAPSE_FASTQ(params.sample_sheet)
+    // FLAIR_COLLAPSE_BED()
 
+    // sample manifest file
+    // FLAIR_QUANTIFY()
+
+    
 }
