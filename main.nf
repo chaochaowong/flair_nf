@@ -107,7 +107,7 @@ process FLAIR_COLLAPSE {
         path(combined_corrected_bed)
 
     output:
-        path('combined_samples.falir.collapse*')        
+        path('combined_samples.flair.collapse*')        
 
     script: 
     """
@@ -116,7 +116,7 @@ process FLAIR_COLLAPSE {
       -q ${combined_corrected_bed} \
       -r ${combined_fastq} \
       --annotation_reliant generate --generate_map --check_splice --stringent \
-      --output combined_samples.falir.collapse \
+      --output combined_samples.flair.collapse \
       --threads 8
     """
 }
@@ -141,6 +141,27 @@ process SAMPLE_MANIFEST_TSV {
     """        
 }
 
+process FLAIR_QUANTIFY {
+    publishDir "${params.outdir}/quant", mode: 'copy'
+
+    input:
+        path(sample_manifest_tsv)
+        path(collapse_files)
+
+    output:
+        path('flair.quantify*')
+
+    script:
+    """
+    flair quantify -r ${sample_manifest_tsv} \
+      -i combined_samples.flair.collapse.isoforms.fa \
+      --generate_map --isoform_bed combined_samples.flair.collapse.isoforms.bed \
+      --stringent --check_splice \
+      --threads 8 \
+      --output flair.quantify
+    """        
+}
+
 workflow {
     // Create input channel from samplesheet in TSV format
     reads_ch = Channel.fromPath(params.sample_sheet)
@@ -157,4 +178,7 @@ workflow {
     FLAIR_COLLAPSE(params.genome_reference, params.gtf, FLAIR_CONCAT_FASTQ.out, FLAIR_CONCAT_CORRECT_BED.out)
     // sample manifest file
     SAMPLE_MANIFEST_TSV(params.sample_sheet)
+    // flair quant
+    FLAIR_QUANTIFY(SAMPLE_MANIFEST_TSV.out, FLAIR_COLLAPSE.out )
+    FLAIR_QUANTIFY.out.view { it }
 }

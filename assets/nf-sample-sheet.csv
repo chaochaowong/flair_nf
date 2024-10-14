@@ -1,7 +1,7 @@
-sample_id,sample,fq
-A549_directRNA_sample1,A549,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample1.fastq
-A549_directRNA_sample2,A549,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample2.fastq
-A549_directRNA_sample3,A549,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample3.fastq
-HepG2_directRNA_sample1,HepG2,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/HepG2_directRNA_sample1.fastq
-HepG2_directRNA_sample2,HepG2,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/HepG2_directRNA_sample2.fastq
-HepG2_directRNA_sample3,HepG2,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/HepG2_directRNA_sample3.fastq
+sample_id,condition,batch,fq
+A549_directRNA_sample1,A549,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample1.fastq
+A549_directRNA_sample2,A549,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample2.fastq
+A549_directRNA_sample3,A549,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample3.fastq
+HepG2_directRNA_sample1,HepG2,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/HepG2_directRNA_sample1.fastq
+HepG2_directRNA_sample2,HepG2,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/HepG2_directRNA_sample2.fastq
+HepG2_directRNA_sample3,HepG2,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/HepG2_directRNA_sample3.fastq
