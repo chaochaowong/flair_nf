@@ -97,6 +97,30 @@ process FLAIR_CONCAT_CORRECT_BED {
 
 }
 
+process FLAIR_COLLAPSE {
+    publishDir "${params.outdir}/collapse", mode: 'copy'
+
+    input:
+        path(ref_fasta)
+        path(gtf)
+        path(combined_fastq)
+        path(combined_corrected_bed)
+
+    output:
+        path('combined_samples.falir.collapse*')        
+
+    script: 
+    """
+    flair collapse -g ${ref_fasta} \
+      --gtf ${gtf} \
+      -q ${combined_corrected_bed} \
+      -r ${combined_fastq} \
+      --annotation_reliant generate --generate_map --check_splice --stringent \
+      --output combined_samples.falir.collapse \
+      --threads 8
+    """
+}
+
 
 
 workflow {
@@ -107,12 +131,14 @@ workflow {
     // reads_ch.view{ it }            
     FLAIR_ALIGN(reads_ch, params.genome_reference, params.genome_reference_index, params.gtf, params.min_mapq)
     // FLAIR_ALIGN.out.view{ it }
+    
     FLAIR_CORRECT(FLAIR_ALIGN.out, params.genome_reference, params.gtf)
     //FLAIR_CORRECT.out.view{ it }
 
     FLAIR_CONCAT_FASTQ(params.sample_sheet)
     FLAIR_CONCAT_CORRECT_BED(FLAIR_CORRECT.out.collect())
-    FLAIR_CONCAT_CORRECT_BED.out.view{ it }
+    // FLAIR_CONCAT_CORRECT_BED.out.view{ it }
+
+    FLAIR_COLLAPSE(params.genome_reference, params.gtf, FLAIR_CONCAT_FASTQ.out, FLAIR_CONCAT_CORRECT_BED.out)
     // sample manifest file
-    // FLAIR_QUANTIFY()
 }
