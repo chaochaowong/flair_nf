@@ -20,7 +20,7 @@ process FLAIR_ALIGN {
     publishDir "${params.outdir}/aligned", mode: 'copy'
 
     input: 
-        tuple val(sample_id), val(sample), path(fastq)
+        tuple val(sample_id), val(condition), val(batch), path(fastq)
         path ref_fasta
         path ref_index
         path gtf
@@ -72,7 +72,7 @@ process FLAIR_CONCAT_FASTQ {
 
     script:
     """
-    awk -F, 'NR>1 {print \$3}' ${sample_sheet} | xargs cat > combined_samples.fastq
+    awk -F, 'NR>1 {print \$4}' ${sample_sheet} | xargs cat > combined_samples.fastq
     """    
 }
 
@@ -121,24 +121,40 @@ process FLAIR_COLLAPSE {
     """
 }
 
+process SAMPLE_MANIFEST_TSV {
+    publishDir "${params.outdir}/quant", mode: 'copy'
 
+    input:
+        path(sample_sheet)
+
+    output:
+        path('sample-manifest.tsv')
+
+    script:
+    """
+    #!/usr/bin/env python
+    import pandas as pd
+    csv_file = '${sample_sheet}'
+    df = pd.read_csv(csv_file)
+    df[['sample_id', 'condition', 'batch']] = df[['sample_id', 'condition', 'batch']].replace('_', '-', regex=True)
+    df.to_csv('sample-manifest.tsv', sep='\\t', index=False, header=False)
+    """        
+}
 
 workflow {
-    // Create input channel from samplesheet in CSV format
+    // Create input channel from samplesheet in TSV format
     reads_ch = Channel.fromPath(params.sample_sheet)
                       .splitCsv(header: true)
-                      .map { row -> [row.sample_id, row.sample, file(row.fq)] }
-    // reads_ch.view{ it }            
+                      .map { row -> [row.sample_id, row.condition, row.batch, file(row.fq)] }
+    // call flair align                      
     FLAIR_ALIGN(reads_ch, params.genome_reference, params.genome_reference_index, params.gtf, params.min_mapq)
-    // FLAIR_ALIGN.out.view{ it }
-    
+    // flair correct
     FLAIR_CORRECT(FLAIR_ALIGN.out, params.genome_reference, params.gtf)
-    //FLAIR_CORRECT.out.view{ it }
-
+    // concatnate all fastq and all_corrected.bed
     FLAIR_CONCAT_FASTQ(params.sample_sheet)
     FLAIR_CONCAT_CORRECT_BED(FLAIR_CORRECT.out.collect())
-    // FLAIR_CONCAT_CORRECT_BED.out.view{ it }
-
+    // flair collapse 
     FLAIR_COLLAPSE(params.genome_reference, params.gtf, FLAIR_CONCAT_FASTQ.out, FLAIR_CONCAT_CORRECT_BED.out)
     // sample manifest file
+    SAMPLE_MANIFEST_TSV(params.sample_sheet)
 }
