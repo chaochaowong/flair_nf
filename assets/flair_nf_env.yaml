@@ -1,0 +1,17 @@
+name: flair_nf_env
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.10
+  - flair
+  - nextflow
+  - nf-core
+  - nf-tools
+  - nf-test  
+  - pip
+  - pip:
+    - awscli
+    - panda
+    - scipy
+    - numpy
