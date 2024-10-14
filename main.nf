@@ -35,7 +35,7 @@ process FLAIR_ALIGN {
         -r ${fastq} \
         -o ${sample_id}.flair.aligned \
         --quality ${min_mapq} \
-        --threads 8
+        --threads $task.cpus
     """        
 }
 
@@ -57,7 +57,7 @@ process FLAIR_CORRECT {
         --gtf ${gtf} \
         -q ${sample_bed} \
         -o ${sample_id}.flair \
-        --threads 8
+        --threads $task.cpus
     """
 }
 
@@ -117,7 +117,7 @@ process FLAIR_COLLAPSE {
       -r ${combined_fastq} \
       --annotation_reliant generate --generate_map --check_splice --stringent \
       --output combined_samples.flair.collapse \
-      --threads 8
+      --threads $task.cpus
     """
 }
 
@@ -141,6 +141,11 @@ process SAMPLE_MANIFEST_TSV {
     """        
 }
 
+/*
+* flair quantify process that creates flair.quantify.*.isoform.read.map.txt and
+* flair.quanitfy.counts.tsv files in the ./quant foler
+* NOTE: the parameters suggested here are from the tutorial and for hg38
+*/
 process FLAIR_QUANTIFY {
     publishDir "${params.outdir}/quant", mode: 'copy'
 
@@ -157,8 +162,10 @@ process FLAIR_QUANTIFY {
       -i combined_samples.flair.collapse.isoforms.fa \
       --generate_map --isoform_bed combined_samples.flair.collapse.isoforms.bed \
       --stringent --check_splice \
-      --threads 8 \
+      --threads $task.cpus \
       --output flair.quantify
+
+    echo "TMPDIR is set to \$TMPDIR"      
     """        
 }
 
@@ -180,5 +187,5 @@ workflow {
     SAMPLE_MANIFEST_TSV(params.sample_sheet)
     // flair quant
     FLAIR_QUANTIFY(SAMPLE_MANIFEST_TSV.out, FLAIR_COLLAPSE.out )
-    FLAIR_QUANTIFY.out.view { it }
+    // FLAIR_QUANTIFY.out.view { it }
 }
