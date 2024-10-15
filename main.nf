@@ -3,12 +3,12 @@
 log.info """\
   FLAIR_NF PIPELINE on mamba and slurm executor 
   ================================================
-  sample sheet      : ${params.sample_sheet}
-  project directory : ${projectDir}
-  work directory    : ${workDir}
-  genomic reference : ${params.genome_reference}
-  gtf               : ${params.gtf}
-  output directory  : ${params.outdir}
+  Sample sheet      : ${params.sample_sheet}
+  Project directory : ${projectDir}
+  Work directory    : ${workDir}
+  Genomic reference : ${params.genome_reference}
+  GTF               : ${params.gtf}
+  Output directory  : ${params.outdir}
 """
 .stripIndent()
 
@@ -25,19 +25,33 @@ workflow {
     // Create input channel from samplesheet in TSV format
     reads_ch = Channel.fromPath(params.sample_sheet)
                       .splitCsv(header: true)
-                      .map { row -> [row.sample_id, row.condition, row.batch, file(row.fq)] }
+                      .map { row -> 
+                        [row.sample_id, row.condition, row.batch, 
+                         file(row.fq, checkIfExists: true)] 
+                      }
+
     // call flair align                      
-    FLAIR_ALIGN(reads_ch, params.genome_reference, params.genome_reference_index, params.gtf, params.min_mapq)
+    FLAIR_ALIGN(reads_ch, 
+                params.genome_reference, 
+                params.genome_reference_index, 
+                params.gtf, 
+                params.min_mapq)
     // flair correct
-    FLAIR_CORRECT(FLAIR_ALIGN.out, params.genome_reference, params.gtf)
+    FLAIR_CORRECT(FLAIR_ALIGN.out, 
+                  params.genome_reference, 
+                  params.gtf)
     // concatnate all fastq and all_corrected.bed
     CONCAT_FASTQ(params.sample_sheet)
     CONCAT_CORRECTED_BED(FLAIR_CORRECT.out.collect())
     // flair collapse 
-    FLAIR_COLLAPSE(params.genome_reference, params.gtf, CONCAT_FASTQ.out, CONCAT_CORRECTED_BED.out)
+    FLAIR_COLLAPSE(params.genome_reference, 
+                   params.gtf, 
+                   CONCAT_FASTQ.out, 
+                   CONCAT_CORRECTED_BED.out)
     // sample manifest file
     SAMPLE_MANIFEST_TSV(params.sample_sheet)
     // flair quant
-    FLAIR_QUANTIFY(SAMPLE_MANIFEST_TSV.out, FLAIR_COLLAPSE.out )
+    FLAIR_QUANTIFY(SAMPLE_MANIFEST_TSV.out, 
+                   FLAIR_COLLAPSE.out )
     // FLAIR_QUANTIFY.out.view { it }
 }
