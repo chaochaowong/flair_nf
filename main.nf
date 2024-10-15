@@ -12,162 +12,14 @@ log.info """\
 """
 .stripIndent()
 
-/*
-* flair align: align fastq files to feed to minmap2; in the future we should
-* allow hifi reads and use PacBio's wrapper function of minmap2
-*/
-process FLAIR_ALIGN {
-    publishDir "${params.outdir}/aligned", mode: 'copy'
-
-    input: 
-        tuple val(sample_id), val(condition), val(batch), path(fastq)
-        path ref_fasta
-        path ref_index
-        path gtf
-        val(min_mapq)
-    
-    output:
-        tuple val(sample_id), path("${sample_id}.flair.aligned.bam"), path("${sample_id}.flair.aligned.bam.bai"), path("${sample_id}.flair.aligned.bed")
-
-    script:
-    """
-    flair align -g ${ref_fasta} \
-        -r ${fastq} \
-        -o ${sample_id}.flair.aligned \
-        --quality ${min_mapq} \
-        --threads $task.cpus
-    """        
-}
-
-
-process FLAIR_CORRECT {
-    publishDir "${params.outdir}/correct", mode: 'copy'
-
-    input: 
-        tuple val(sample_id), path(sample_bam), path(sample_bai), path(sample_bed)
-        path ref_fasta
-        path gtf
-
-    output: 
-        tuple val(sample_id), path("${sample_id}.flair_all_corrected.bed"), path("${sample_id}.flair_all_inconsistent.bed")
-
-    script:
-    """
-    flair correct -g ${ref_fasta} \
-        --gtf ${gtf} \
-        -q ${sample_bed} \
-        -o ${sample_id}.flair \
-        --threads $task.cpus
-    """
-}
-
-process FLAIR_CONCAT_FASTQ {
-    publishDir "${params.outdir}/collapse", mode: 'copy'
-
-    input: 
-        path(sample_sheet)
-
-    output:    
-        path('combined_samples.fastq')
-
-    script:
-    """
-    awk -F, 'NR>1 {print \$4}' ${sample_sheet} | xargs cat > combined_samples.fastq
-    """    
-}
-
-
-process FLAIR_CONCAT_CORRECT_BED {
-    publishDir "${params.outdir}/collapse", mode: 'copy'
-
-    input: 
-        val(correct_files)
-
-    output: 
-        path('combined_samples.all_corrected.bed')
-
-    script:
-    """
-    # Use Groovy's findAll to extract .bed files
-    bed_files=\$(echo ${correct_files.join(' ')} | xargs -n 1 | grep 'flair_all_corrected.bed')
-
-    # Concatenate the filtered bed files
-    cat \$bed_files > combined_samples.all_corrected.bed
-    """        
-
-}
-
-process FLAIR_COLLAPSE {
-    publishDir "${params.outdir}/collapse", mode: 'copy'
-
-    input:
-        path(ref_fasta)
-        path(gtf)
-        path(combined_fastq)
-        path(combined_corrected_bed)
-
-    output:
-        path('combined_samples.flair.collapse*')        
-
-    script: 
-    """
-    flair collapse -g ${ref_fasta} \
-      --gtf ${gtf} \
-      -q ${combined_corrected_bed} \
-      -r ${combined_fastq} \
-      --annotation_reliant generate --generate_map --check_splice --stringent \
-      --output combined_samples.flair.collapse \
-      --threads $task.cpus
-    """
-}
-
-process SAMPLE_MANIFEST_TSV {
-    publishDir "${params.outdir}/quant", mode: 'copy'
-
-    input:
-        path(sample_sheet)
-
-    output:
-        path('sample-manifest.tsv')
-
-    script:
-    """
-    #!/usr/bin/env python
-    import pandas as pd
-    csv_file = '${sample_sheet}'
-    df = pd.read_csv(csv_file)
-    df[['sample_id', 'condition', 'batch']] = df[['sample_id', 'condition', 'batch']].replace('_', '-', regex=True)
-    df.to_csv('sample-manifest.tsv', sep='\\t', index=False, header=False)
-    """        
-}
-
-/*
-* flair quantify process that creates flair.quantify.*.isoform.read.map.txt and
-* flair.quanitfy.counts.tsv files in the ./quant foler
-* NOTE: the parameters suggested here are from the tutorial and for hg38
-*/
-process FLAIR_QUANTIFY {
-    publishDir "${params.outdir}/quant", mode: 'copy'
-
-    input:
-        path(sample_manifest_tsv)
-        path(collapse_files)
-
-    output:
-        path('flair.quantify*')
-
-    script:
-    """
-    flair quantify -r ${sample_manifest_tsv} \
-      -i combined_samples.flair.collapse.isoforms.fa \
-      --generate_map --isoform_bed combined_samples.flair.collapse.isoforms.bed \
-      --stringent --check_splice \
-      --threads $task.cpus \
-      --output flair.quantify
-
-    echo "TMPDIR is set to \$TMPDIR"      
-    """        
-}
+// Include modules
+include { FLAIR_ALIGN } from './modules/local/flair/align/main.nf'
+include { FLAIR_CORRECT } from './modules/local/flair/correct/main.nf'
+include { CONCAT_FASTQ } from './modules/local/concat_fastq/main.nf'
+include { CONCAT_CORRECTED_BED } from './modules/local/concat_corrected_bed/main.nf'
+include { FLAIR_COLLAPSE } from './modules/local/flair/collapse/main.nf'
+include { SAMPLE_MANIFEST_TSV }  from './modules/local/sample_manifest_tsv/main.nf'
+include { FLAIR_QUANTIFY } from './modules/local/flair/quantify/main.nf'
 
 workflow {
     // Create input channel from samplesheet in TSV format
@@ -179,10 +31,10 @@ workflow {
     // flair correct
     FLAIR_CORRECT(FLAIR_ALIGN.out, params.genome_reference, params.gtf)
     // concatnate all fastq and all_corrected.bed
-    FLAIR_CONCAT_FASTQ(params.sample_sheet)
-    FLAIR_CONCAT_CORRECT_BED(FLAIR_CORRECT.out.collect())
+    CONCAT_FASTQ(params.sample_sheet)
+    CONCAT_CORRECTED_BED(FLAIR_CORRECT.out.collect())
     // flair collapse 
-    FLAIR_COLLAPSE(params.genome_reference, params.gtf, FLAIR_CONCAT_FASTQ.out, FLAIR_CONCAT_CORRECT_BED.out)
+    FLAIR_COLLAPSE(params.genome_reference, params.gtf, CONCAT_FASTQ.out, CONCAT_CORRECTED_BED.out)
     // sample manifest file
     SAMPLE_MANIFEST_TSV(params.sample_sheet)
     // flair quant
