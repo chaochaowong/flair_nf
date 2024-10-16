@@ -27,10 +27,9 @@ workflow {
                       .splitCsv(header: true)
                       .map { row -> 
                         [row.sample_id, row.condition, row.batch, 
-                         file(row.fq, checkIfExists: true)] 
-                      }
+                         file(row.fq, checkIfExists: true)] }
 
-    // call flair align                      
+    // flair align                      
     FLAIR_ALIGN(reads_ch, 
                 params.genome_reference, 
                 params.genome_reference_index, 

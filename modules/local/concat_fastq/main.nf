@@ -11,7 +11,6 @@ process CONCAT_FASTQ {
     output:    
         path('combined_samples.fastq')
 
-    script:
     """
     awk -F, 'NR>1 {print \$4}' ${sample_sheet} | xargs cat > combined_samples.fastq
     """    
