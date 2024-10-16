@@ -4,6 +4,7 @@
 * NOTE: the parameters suggested here are from the tutorial and for hg38
 */
 process FLAIR_QUANTIFY {
+    tag './quant/flair.quantify.*'
     publishDir "${params.outdir}/quant", mode: 'copy'
 
     input:

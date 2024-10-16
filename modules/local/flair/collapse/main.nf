@@ -8,6 +8,7 @@
 */
 
 process FLAIR_COLLAPSE {
+    tag './collapse/combined_samples.flair.collapse.*'
     publishDir "${params.outdir}/collapse", mode: 'copy'
 
     input:

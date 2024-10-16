@@ -2,6 +2,7 @@
 * flair correctr: corrects alignments to the annotated splice sites
 */ 
 process FLAIR_CORRECT {
+    tag "${sample_id}"
     publishDir "${params.outdir}/correct", mode: 'copy'
 
     input: 

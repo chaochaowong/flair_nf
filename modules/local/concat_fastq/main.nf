@@ -3,6 +3,7 @@
 # to ./collapse/combined_sample.fastq
 */
 process CONCAT_FASTQ {
+    tag './collapse/combined_samples.fastq'
     publishDir "${params.outdir}/collapse", mode: 'copy'
 
     input: 

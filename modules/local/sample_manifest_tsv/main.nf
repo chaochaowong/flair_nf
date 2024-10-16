@@ -5,6 +5,7 @@
 *      to '-' 
 */
 process SAMPLE_MANIFEST_TSV {
+    tag './quant/sample-manifest.tsv'
     publishDir "${params.outdir}/quant", mode: 'copy'
 
     input:

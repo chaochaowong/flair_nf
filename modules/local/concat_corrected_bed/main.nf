@@ -3,6 +3,7 @@
 * and deposit to './collapse/combined_samples.all_corrected.bed'
 */
 process CONCAT_CORRECTED_BED {
+    tag './collapse/combined_samples.all_corrected.bed'
     publishDir "${params.outdir}/collapse", mode: 'copy'
 
     input: 
