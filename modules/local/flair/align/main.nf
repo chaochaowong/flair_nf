@@ -4,6 +4,7 @@
 * NOTE: flair align should allow hifi reads and use PacBio's wrapper function of minmap2
 */
 process FLAIR_ALIGN {
+    tag "FLAIR_ALIGN on ${sample_id}"
     publishDir "${params.outdir}/aligned", mode: 'copy'
 
     input: 
