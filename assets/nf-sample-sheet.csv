@@ -1,4 +1,4 @@
-sample_id,condition,batch,fq
+sample_id,condition,batch,reads
 A549_directRNA_sample1,A549,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample1.fastq
 A549_directRNA_sample2,A549,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample2.fastq
 A549_directRNA_sample3,A549,batch1,/data/hps/assoc/private/sarthy_lab/user/cwo11/projects/flair-tutorial/tutorial/fastq/A549_directRNA_sample3.fastq

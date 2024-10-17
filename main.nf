@@ -23,11 +23,10 @@ include { FLAIR_QUANTIFY } from './modules/local/flair/quantify/main.nf'
 
 workflow {
     // Create input channel from samplesheet in TSV format
-    reads_ch = Channel.fromPath(params.sample_sheet)
-                      .splitCsv(header: true)
+    reads_ch = Channel.fromPath( params.sample_sheet )
+                      .splitCsv( header: true )
                       .map { row -> 
-                        [row.sample_id, row.condition, row.batch, 
-                         file(row.fq, checkIfExists: true)] }
+                        [row.sample_id, file(row.reads, checkIfExists: true)] }
 
     // flair align                      
     FLAIR_ALIGN(reads_ch, 
@@ -35,22 +34,34 @@ workflow {
                 params.genome_reference_index, 
                 params.gtf, 
                 params.min_mapq)
+
     // flair correct
     FLAIR_CORRECT(FLAIR_ALIGN.out, 
                   params.genome_reference, 
                   params.gtf)
-    // concatnate all fastq and all_corrected.bed
-    CONCAT_FASTQ(params.sample_sheet)
+
+    // concatnate all fastq 
+    Channel.fromPath( params.sample_sheet )
+      .splitCsv( header: true )
+      .map { row -> file(row.reads, checkIfExists: true) } 
+      .collect()
+      | CONCAT_FASTQ
+
+    // concatenate corrected bed files
     CONCAT_CORRECTED_BED(FLAIR_CORRECT.out.collect())
+
     // flair collapse 
     FLAIR_COLLAPSE(params.genome_reference, 
                    params.gtf, 
                    CONCAT_FASTQ.out, 
                    CONCAT_CORRECTED_BED.out)
+
     // sample manifest file
     SAMPLE_MANIFEST_TSV(params.sample_sheet)
+
     // flair quant
     FLAIR_QUANTIFY(SAMPLE_MANIFEST_TSV.out, 
                    FLAIR_COLLAPSE.out )
     // FLAIR_QUANTIFY.out.view { it }
+
 }

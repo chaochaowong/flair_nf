@@ -16,10 +16,10 @@ process SAMPLE_MANIFEST_TSV {
 
     script:
     """
-    #!/usr/bin/env python
+    #!/usr/bin/env python3
     import pandas as pd
     csv_file = '${sample_sheet}'
-    df = pd.read_csv(csv_file)
+    df = pd.read_csv(csv_file, usecols=['sample_id', 'condition', 'batch', 'reads'])
     df[['sample_id', 'condition', 'batch']] = df[['sample_id', 'condition', 'batch']].replace('_', '-', regex=True)
     df.to_csv('sample-manifest.tsv', sep='\\t', index=False, header=False)
     """        

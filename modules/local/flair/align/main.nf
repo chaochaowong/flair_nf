@@ -8,7 +8,7 @@ process FLAIR_ALIGN {
     publishDir "${params.outdir}/aligned", mode: 'copy'
 
     input: 
-        tuple val(sample_id), val(condition), val(batch), path(fastq)
+        tuple val(sample_id), path(fastq)
         path ref_fasta
         path ref_index
         path gtf

@@ -2,17 +2,20 @@
 * Concatenate all fastq files in the 'fq' colum and deposit
 # to ./collapse/combined_sample.fastq
 */
+
 process CONCAT_FASTQ {
     tag './collapse/combined_samples.fastq'
     publishDir "${params.outdir}/collapse", mode: 'copy'
 
     input: 
-        path(sample_sheet)
+        path(collected_files)
 
-    output:    
+    output: 
         path('combined_samples.fastq')
 
+    script:
     """
-    awk -F, 'NR>1 {print \$4}' ${sample_sheet} | xargs cat > combined_samples.fastq
-    """    
+    cat ${collected_files.join(' ')} > combined_samples.fastq
+    """
 }
+
